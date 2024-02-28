@@ -5,6 +5,7 @@ import static org.lwjgl.opengl.GL11.*;
 import java.nio.ByteBuffer;
 
 import net.minecraft.client.render.Tessellator;
+import net.minecraft.core.util.helper.MathHelper;
 
 public class CustomTessellator extends Tessellator {
 	
@@ -141,10 +142,10 @@ public class CustomTessellator extends Tessellator {
 			return;
 		}
 		hasColor = true;
-		r = r & 0xFF;
-		g = g & 0xFF;
-		b = b & 0xFF;
-		a = a & 0xFF;
+		r = MathHelper.clamp(r, 0, 255);
+		g = MathHelper.clamp(g, 0, 255);
+		b = MathHelper.clamp(b, 0, 255);
+		a = MathHelper.clamp(a, 0, 255);
 		this.color = a << 24 | b << 16 | g << 8 | r;
 	}
 	
