@@ -1,0 +1,6 @@
+{
+	"modid": "natrium",
+	"transformers": [
+		"b100.natrium.asm.Transformers"
+	]
+}
