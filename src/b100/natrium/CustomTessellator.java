@@ -2,6 +2,8 @@ package b100.natrium;
 
 import static org.lwjgl.opengl.GL11.*;
 
+import java.nio.ByteBuffer;
+
 import net.minecraft.client.render.Tessellator;
 
 public class CustomTessellator extends Tessellator {
@@ -9,7 +11,7 @@ public class CustomTessellator extends Tessellator {
 	public CustomTessellator() {
 		super(0);
 		
-		this.byteBuffer = BufferHelper.createByteBuffer(Integer.MAX_VALUE / 4);
+		this.byteBuffer = BufferHelper.createByteBuffer(262144);
 	}
 	
 	@Override
@@ -81,6 +83,10 @@ public class CustomTessellator extends Tessellator {
 	public void addVertex(double x, double y, double z) {
 		checkIsDrawing();
 		
+		if(byteBuffer.capacity() < byteBuffer.position() + 64) {
+			expandBuffer();
+		}
+		
 		byteBuffer.putFloat((float) (xOffset + x));
 		byteBuffer.putFloat((float) (yOffset + y));
 		byteBuffer.putFloat((float) (zOffset + z));
@@ -150,5 +156,16 @@ public class CustomTessellator extends Tessellator {
 		if(hasNormals) size += 3;
 		
 		return size;
+	}
+	
+	public void expandBuffer() {
+		int newSize = byteBuffer.capacity() * 2;
+		System.out.println("Expanding tessellator buffer to " + newSize);
+		
+		ByteBuffer newBuffer = BufferHelper.createByteBuffer(newSize);
+		newBuffer.clear();
+		byteBuffer.flip();
+		newBuffer.put(byteBuffer);
+		this.byteBuffer = newBuffer;
 	}
 }
