@@ -65,10 +65,23 @@ public class TerrainRenderer {
 	}
 	
 	public void renderTranslucentTerrain() {
+		if(renderLists[1].visibleEntries.size() == 0) {
+			return;
+		}
+
 		glPushMatrix();
 		glTranslated(-renderPosX, -renderPosY, -renderPosZ);
 		
-		renderLists[1].draw();
+		boolean fancyGraphics = mc.gameSettings.fancyGraphics.value != 0;
+		if(fancyGraphics) {
+			glColorMask(false, false, false, false);
+			renderLists[1].draw();
+			glColorMask(true, true, true, true);
+			renderLists[1].draw();
+		}else {
+			renderLists[1].draw();
+		}
+		
 		
 		glPopMatrix();
 	}
