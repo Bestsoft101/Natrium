@@ -2,7 +2,6 @@ package b100.natrium;
 
 import static org.lwjgl.opengl.GL15.*;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -11,17 +10,16 @@ public class VBOPool {
 	public List<Entry> entries = new ArrayList<>();
 
 	private int vbo;
-	private int capacity;
+	private long capacity;
 	
 	private int entryHashCounter;
 	
-	public VBOPool(int initialSize) {
+	public VBOPool(long initialSize) {
 		this.capacity = initialSize;
 		this.vbo = glGenBuffers();
 		
-		ByteBuffer buffer = BufferHelper.createByteBuffer(initialSize);
 		glBindBuffer(GL_ARRAY_BUFFER, vbo);
-		glBufferData(GL_ARRAY_BUFFER, buffer, GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, capacity, GL_STATIC_DRAW);
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 	}
 	
