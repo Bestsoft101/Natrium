@@ -22,6 +22,9 @@ public class TerrainRenderer {
 	public double prevSortY;
 	public double prevSortZ;
 	
+	public long renderOffsetX;
+	public long renderOffsetZ;
+	
 	public void init(Minecraft minecraft) {
 		this.mc = minecraft;
 		
@@ -56,8 +59,19 @@ public class TerrainRenderer {
 			mc.renderGlobal.markRenderersForNewPosition(blockX, blockY, blockZ);
 		}
 		
+		double dX1 = Math.abs(renderPosX - renderOffsetX);
+		double dZ1 = Math.abs(renderPosZ - renderOffsetZ);
+		
+		if(Math.max(dX1, dZ1) > 4096) {
+			this.renderOffsetX = (((long) renderPosX) >> 4) << 4;
+			this.renderOffsetZ = (((long) renderPosZ) >> 4) << 4;
+			NatriumMod.log("Set render offset: " + renderOffsetX + ", " + renderOffsetZ);
+			mc.renderGlobal.loadRenderers();
+		}
+		
 		glPushMatrix();
 		glTranslated(-renderPosX, -renderPosY, -renderPosZ);
+		glTranslated(renderOffsetX, 0.0, renderOffsetZ);
 		
 		renderLists[0].draw();
 		
@@ -71,6 +85,7 @@ public class TerrainRenderer {
 
 		glPushMatrix();
 		glTranslated(-renderPosX, -renderPosY, -renderPosZ);
+		glTranslated(renderOffsetX, 0.0, renderOffsetZ);
 		
 		boolean fancyGraphics = mc.gameSettings.fancyGraphics.value != 0;
 		if(fancyGraphics) {

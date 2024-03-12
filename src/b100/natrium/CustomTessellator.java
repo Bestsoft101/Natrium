@@ -12,7 +12,7 @@ public class CustomTessellator extends Tessellator {
 	public CustomTessellator() {
 		super(0);
 		
-		this.byteBuffer = BufferHelper.createByteBuffer(262144);
+		this.byteBuffer = BufferHelper.createByteBuffer(131072);
 	}
 	
 	@Override
@@ -161,7 +161,7 @@ public class CustomTessellator extends Tessellator {
 	
 	public void expandBuffer() {
 		int newSize = byteBuffer.capacity() * 2;
-		System.out.println("Expanding tessellator buffer to " + newSize);
+		NatriumMod.log("Expanding tessellator buffer to " + newSize);
 		
 		ByteBuffer newBuffer = BufferHelper.createByteBuffer(newSize);
 		newBuffer.clear();

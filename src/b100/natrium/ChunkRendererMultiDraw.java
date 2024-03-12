@@ -6,7 +6,6 @@ import java.util.List;
 import net.minecraft.client.render.ChunkRenderer;
 import net.minecraft.client.render.RenderBlocks;
 import net.minecraft.client.render.RenderEngine;
-import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.TileEntityRenderDispatcher;
 import net.minecraft.client.render.block.model.BlockModel;
 import net.minecraft.client.render.block.model.BlockModelDispatcher;
@@ -87,6 +86,7 @@ public class ChunkRendererMultiDraw extends ChunkRenderer {
 //							tessellator.startDrawingQuads();
 //							tessellator.setTranslation(-posX, -posY, -posZ);
 							tessellator.startDrawingQuads();
+							tessellator.setTranslation(-NatriumMod.terrainRenderer.renderOffsetX, 0, -NatriumMod.terrainRenderer.renderOffsetZ);
 							tessellator.setColorRGBA(255, 255, 255, 255);
 						}
 						if(renderPass == 0 && Block.isEntityTile[blockId]) {
@@ -131,7 +131,7 @@ public class ChunkRendererMultiDraw extends ChunkRenderer {
 //				tessellator.draw();
 //				GL11.glPopMatrix();
 //				GL11.glEndList();
-				tessellator.setTranslation(0.0D, 0.0D, 0.0D);
+				tessellator.setTranslation(0.0, 0.0, 0.0);
 			}else {
 				hasRenderedBlock = false;
 			}
