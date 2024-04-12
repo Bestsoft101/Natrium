@@ -25,6 +25,8 @@ public class TerrainRenderer {
 	public long renderOffsetX;
 	public long renderOffsetZ;
 	
+	private boolean dontSetOffset = false;
+	
 	public void init(Minecraft minecraft) {
 		this.mc = minecraft;
 		
@@ -63,10 +65,14 @@ public class TerrainRenderer {
 		double dZ1 = Math.abs(renderPosZ - renderOffsetZ);
 		
 		if(Math.max(dX1, dZ1) > 4096) {
-			this.renderOffsetX = (((long) renderPosX) >> 4) << 4;
-			this.renderOffsetZ = (((long) renderPosZ) >> 4) << 4;
-			NatriumMod.log("Set render offset: " + renderOffsetX + ", " + renderOffsetZ);
-			mc.renderGlobal.loadRenderers();
+			setRenderOffset(renderPosX, renderPosZ);
+			
+			try {
+				dontSetOffset = true;
+				mc.renderGlobal.loadRenderers();
+			}finally {
+				dontSetOffset = false;
+			}
 		}
 		
 		glPushMatrix();
@@ -76,6 +82,26 @@ public class TerrainRenderer {
 		renderLists[0].draw();
 		
 		glPopMatrix();
+	}
+	
+	public void onReloadChunks() {
+		if(dontSetOffset) {
+			return;
+		}
+		ICamera camera = mc.activeCamera;
+		if(camera != null) {
+			setRenderOffset(camera.getX(), camera.getZ());	
+		}
+	}
+	
+	public void setRenderOffset(double x, double z) {
+		long newX = (((long) x) >> 8) << 8;
+		long newZ = (((long) z) >> 8) << 8;
+		if(newX != renderOffsetX || newZ != renderOffsetZ) {
+			renderOffsetX = newX;
+			renderOffsetZ = newZ;
+			NatriumMod.log("Set render offset: " + renderOffsetX + ", " + renderOffsetZ);
+		}
 	}
 	
 	public void renderTranslucentTerrain() {

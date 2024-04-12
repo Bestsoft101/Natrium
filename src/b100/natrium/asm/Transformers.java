@@ -84,6 +84,8 @@ public class Transformers {
 			TypeInsnNode chunkRendererNewNode = (TypeInsnNode) ASMHelper.findInstruction(chunkRendererInitNode, true, (n) -> n.getOpcode() == Opcodes.NEW);
 			chunkRendererInitNode.owner = "b100/natrium/ChunkRendererMultiDraw";
 			chunkRendererNewNode.desc = "b100/natrium/ChunkRendererMultiDraw";
+			
+			loadRenderers.instructions.insertBefore(loadRenderers.instructions.getFirst(), new MethodInsnNode(Opcodes.INVOKESTATIC, listenerClass, "onReloadChunks", "()V"));
 		}
 	}
 	

@@ -48,5 +48,9 @@ public class Listeners {
 			ci.setCancelled(true);
 		}
 	}
+	
+	public static void onReloadChunks() {
+		NatriumMod.terrainRenderer.onReloadChunks();
+	}
 
 }
