@@ -19,6 +19,10 @@ public class Listeners {
 		NatriumMod.terrainRenderer.init(mc);
 	}
 	
+	public static void onWorldChange() {
+		NatriumMod.terrainRenderer.updateRenderOffsetNext = true;
+	}
+	
 	public static int onSortAndRender(RenderGlobal renderGlobal, ICamera activeCamera, int renderPass, double partialTicks) {
 		if(renderPass == 0) {
 			NatriumMod.terrainRenderer.renderTerrain(activeCamera, (float) partialTicks);

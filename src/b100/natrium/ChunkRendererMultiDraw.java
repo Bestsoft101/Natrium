@@ -19,6 +19,19 @@ import net.minecraft.core.world.chunk.ChunkCache;
 
 public class ChunkRendererMultiDraw extends ChunkRenderer {
 	
+	private static final boolean shadersInstalled;
+	
+	static {
+		boolean flag = true;
+		try {
+			b100.shaders.asm.Listeners.class.getName();
+		}catch (Throwable e) {
+			flag = false;
+		}
+		shadersInstalled = flag;
+		NatriumMod.log("Shaders Installed: " + shadersInstalled);
+	}
+	
 	public VBOPool.Entry[] renderListEntries = new VBOPool.Entry[MAX_RENDER_PASSES];
 
 	public ChunkRendererMultiDraw(RenderEngine renderEngine, World world, List<TileEntity> list, int posX, int posY, int posZ, int size, int renderList) {
@@ -88,6 +101,9 @@ public class ChunkRendererMultiDraw extends ChunkRenderer {
 							tessellator.startDrawingQuads();
 							tessellator.setTranslation(-NatriumMod.terrainRenderer.renderOffsetX, 0, -NatriumMod.terrainRenderer.renderOffsetZ);
 							tessellator.setColorRGBA(255, 255, 255, 255);
+							if(shadersInstalled) {
+								b100.shaders.asm.Listeners.onChunkRenderStart(this, (CustomTessellator) tessellator);
+							}
 						}
 						if(renderPass == 0 && Block.isEntityTile[blockId]) {
 							TileEntity tileentity = chunkcache.getBlockTileEntity(x, y, z);
@@ -100,6 +116,9 @@ public class ChunkRendererMultiDraw extends ChunkRenderer {
 						if(blockRenderPass != renderPass) {
 							needsMoreRenderPasses = true;
 						}else {
+							if(shadersInstalled) {
+								b100.shaders.asm.Listeners.setBlockID(block);
+							}
 							BlockModel model = BlockModelDispatcher.getInstance().getDispatch(block);
 							hasRenderedBlock |= model.render(block, x, y, z);
 							if(block.hasOverbright) {

@@ -31,10 +31,14 @@ public class Transformers {
 		@Override
 		public void transform(String className, ClassNode classNode) {
 			MethodNode startGame = ASMHelper.findMethod(classNode, "startGame", null);
+			MethodNode changeWorld = ASMHelper.findMethod(classNode, "changeWorld", "(Lnet/minecraft/core/world/World;Ljava/lang/String;Lnet/minecraft/core/entity/player/EntityPlayer;)V");
+			
 			List<AbstractInsnNode> returnNodes = ASMHelper.findAllInstructions(startGame.instructions, (n) -> n.getOpcode() == Opcodes.RETURN);
 			for(int i=0; i < returnNodes.size(); i++) {
 				startGame.instructions.insertBefore(returnNodes.get(i), new MethodInsnNode(Opcodes.INVOKESTATIC, listenerClass, "onStartGame", "()V"));	
 			}
+			
+			changeWorld.instructions.insertBefore(changeWorld.instructions.getFirst(), new MethodInsnNode(Opcodes.INVOKESTATIC, listenerClass, "onWorldChange", "()V"));
 		}
 	}
 	

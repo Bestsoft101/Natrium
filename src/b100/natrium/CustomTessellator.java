@@ -1,13 +1,18 @@
 package b100.natrium;
 
 import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL20.*;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 import net.minecraft.client.render.Tessellator;
 import net.minecraft.core.util.helper.MathHelper;
 
 public class CustomTessellator extends Tessellator {
+	
+	public List<VertexAttribute> vertexAttribs = new ArrayList<>();
 	
 	public CustomTessellator() {
 		super(0);
@@ -24,6 +29,7 @@ public class CustomTessellator extends Tessellator {
 		this.hasColor = false;
 		this.hasTexture = false;
 		this.hasNormals = false;
+		vertexAttribs.clear();
 		
 		this.drawMode = drawMode;
 		addedVertices = 0;
@@ -77,7 +83,21 @@ public class CustomTessellator extends Tessellator {
 			glDisableClientState(GL_NORMAL_ARRAY);
 		}
 		
+		for(int i=0; i < vertexAttribs.size(); i++) {
+			VertexAttribute attrib = vertexAttribs.get(i);
+			
+			byteBuffer.position(offset);
+			glEnableVertexAttribArray(attrib.id);
+			glVertexAttribPointer(attrib.id, attrib.getSize(), attrib.type, false, vertexSize, byteBuffer);
+			offset += attrib.getTypeSize();
+		}
+		
 		glDrawArrays(drawMode, 0, addedVertices);
+		
+		for(int i=0; i < vertexAttribs.size(); i++) {
+			VertexAttribute attrib = vertexAttribs.get(i);
+			glDisableVertexAttribArray(attrib.id);
+		}
 	}
 	
 	@Override
@@ -105,6 +125,10 @@ public class CustomTessellator extends Tessellator {
 			byteBuffer.put((byte) ((this.normal >> 16) & 0xFF));
 			byteBuffer.put((byte) ((this.normal >>  8) & 0xFF));
 			byteBuffer.put((byte) (this.normal & 0xFF));
+		}
+		
+		for(int i=0; i < vertexAttribs.size(); i++) {
+			vertexAttribs.get(i).addVertex(byteBuffer);
 		}
 		
 		addedVertices++;
@@ -149,12 +173,34 @@ public class CustomTessellator extends Tessellator {
 		this.color = a << 24 | b << 16 | g << 8 | r;
 	}
 	
+	public void addVertexAttrib(VertexAttribute vertexAttribute) {
+		checkIsDrawing();
+		if(addedVertices > 0) {
+			throw new RuntimeException("Already started drawing!");
+		}
+		for(int i=0; i < this.vertexAttribs.size(); i++) {
+			VertexAttribute attrib = this.vertexAttribs.get(i);
+			
+			if(attrib.id == vertexAttribute.id) {
+				throw new RuntimeException("Vertex Attribute with ID " + attrib.id + " is already added!");
+			}
+			if(attrib.name.equals(vertexAttribute.name)) {
+				throw new RuntimeException("Vertex Attribute with name '" + attrib.name + "' is already added!");
+			}
+		}
+		this.vertexAttribs.add(vertexAttribute);
+	}
+	
 	public int getVertexSize() {
 		int size = 12;
 		
 		if(hasColor) size += 4;
 		if(hasTexture) size += 8;
 		if(hasNormals) size += 3;
+		
+		for(int i=0; i < vertexAttribs.size(); i++) {
+			size += vertexAttribs.get(i).getTypeSize();
+		}
 		
 		return size;
 	}

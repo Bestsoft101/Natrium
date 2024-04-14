@@ -3,6 +3,7 @@ package b100.natrium;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL14.*;
 import static org.lwjgl.opengl.GL15.*;
+import static org.lwjgl.opengl.GL20.*;
 
 import java.nio.IntBuffer;
 import java.util.ArrayList;
@@ -39,8 +40,10 @@ public class MultiDrawRenderList {
 		if(entries.size() == 0) {
 			this.config = VertexConfig.fromTessellator(tessellator);
 		}else {
-			if(!this.config.equals(VertexConfig.fromTessellator(tessellator))) {
-				throw new RuntimeException("VertexConfig Mismatch!");
+			VertexConfig tessellatorConfig = VertexConfig.fromTessellator(tessellator);
+			int compareStatus = VertexConfig.compare(config, tessellatorConfig);
+			if(compareStatus != 0) {
+				throw new RuntimeException("VertexConfig Mismatch!\n" + this.config + "\n" + tessellatorConfig + "\nError: " + compareStatus);
 			}
 		}
 		
@@ -131,7 +134,21 @@ public class MultiDrawRenderList {
 			glDisableClientState(GL_NORMAL_ARRAY);
 		}
 		
+		for(int i=0; i < config.vertexAttribs.size(); i++) {
+			VertexAttribute attrib = config.vertexAttribs.get(i);
+			
+			glEnableVertexAttribArray(attrib.id);
+			glVertexAttribPointer(attrib.id, attrib.getSize(), attrib.type, false, vertexSize, offset);
+			offset += attrib.getTypeSize();
+		}
+		
 		glMultiDrawArrays(config.drawMode, posBuffer, sizeBuffer);
+
+		for(int i=0; i < config.vertexAttribs.size(); i++) {
+			VertexAttribute attrib = config.vertexAttribs.get(i);
+			
+			glDisableVertexAttribArray(attrib.id);
+		}
 		
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 	}

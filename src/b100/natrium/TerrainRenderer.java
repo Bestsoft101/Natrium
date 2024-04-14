@@ -27,6 +27,8 @@ public class TerrainRenderer {
 	
 	private boolean dontSetOffset = false;
 	
+	public boolean updateRenderOffsetNext = false;
+	
 	public void init(Minecraft minecraft) {
 		this.mc = minecraft;
 		
@@ -64,8 +66,17 @@ public class TerrainRenderer {
 		double dX1 = Math.abs(renderPosX - renderOffsetX);
 		double dZ1 = Math.abs(renderPosZ - renderOffsetZ);
 		
-		if(Math.max(dX1, dZ1) > 4096) {
+		if(Math.max(dX1, dZ1) > 4096 || updateRenderOffsetNext) {
+			updateRenderOffsetNext = false;
+			
 			setRenderOffset(renderPosX, renderPosZ);
+
+			double dX2 = Math.abs(renderPosX - renderOffsetX);
+			double dZ2 = Math.abs(renderPosZ - renderOffsetZ);
+			
+			if(Math.max(dX2, dZ2) > 4096) {
+				throw new RuntimeException("Render offset still too big after setting!");
+			}
 			
 			try {
 				dontSetOffset = true;
