@@ -1,23 +1,47 @@
 package b100.natrium;
 
 import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL13.*;
 import static org.lwjgl.opengl.GL20.*;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-import net.minecraft.client.render.Tessellator;
+import net.minecraft.client.render.LightmapHelper;
+import net.minecraft.client.render.tessellator.TessellatorBase;
 import net.minecraft.core.util.helper.MathHelper;
 
-public class CustomTessellator extends Tessellator {
+public class CustomTessellator extends TessellatorBase {
 	
+	public ByteBuffer buffer;
+
 	public List<VertexAttribute> vertexAttribs = new ArrayList<>();
 	
+	public int drawMode;
+	
+	public boolean hasColor = false;
+	public boolean hasTexture = false;
+	public boolean hasNormals = false;
+	public boolean hasLightmap = false;
+
+	private int normal;
+	private int color;
+	private int lightmapCoord;
+	private double textureU;
+	private double textureV;
+	
+	public boolean isDrawing = false;
+	public int addedVertices = 0;
+	
+	private boolean isColorDisabled = false;
+	
+	private double xOffset;
+	private double yOffset;
+	private double zOffset;
+	
 	public CustomTessellator() {
-		super(0);
-		
-		this.byteBuffer = BufferHelper.createByteBuffer(131072);
+		this.buffer = BufferHelper.createByteBuffer(131072);
 	}
 	
 	@Override
@@ -29,12 +53,13 @@ public class CustomTessellator extends Tessellator {
 		this.hasColor = false;
 		this.hasTexture = false;
 		this.hasNormals = false;
+		this.hasLightmap = false;
 		vertexAttribs.clear();
 		
 		this.drawMode = drawMode;
 		addedVertices = 0;
 		
-		byteBuffer.clear();
+		buffer.clear();
 		
 		this.isColorDisabled = false;
 		this.isDrawing = true;
@@ -49,46 +74,57 @@ public class CustomTessellator extends Tessellator {
 			return;
 		}
 		
-		byteBuffer.flip();
+		buffer.flip();
 		
 		int vertexSize = getVertexSize();
 		int offset = 0;
 		
 		glEnableClientState(GL_VERTEX_ARRAY);
-		glVertexPointer(3, GL_FLOAT, vertexSize, byteBuffer);
+		glVertexPointer(3, GL_FLOAT, vertexSize, buffer);
 		offset += 12;
 		
 		if(hasColor) {
-			byteBuffer.position(offset);
+			buffer.position(offset);
 			glEnableClientState(GL_COLOR_ARRAY);
-			glColorPointer(4, GL_UNSIGNED_BYTE, vertexSize, byteBuffer);
+			glColorPointer(4, GL_UNSIGNED_BYTE, vertexSize, buffer);
 			offset += 4;
 		}else {
 			glDisableClientState(GL_COLOR_ARRAY);
 		}
 		if(hasTexture) {
-			byteBuffer.position(offset);
+			buffer.position(offset);
 			glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-			glTexCoordPointer(2, GL_FLOAT, vertexSize, byteBuffer);
+			glTexCoordPointer(2, GL_FLOAT, vertexSize, buffer);
 			offset += 8;
 		}else {
 			glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 		}
 		if(hasNormals) {
-			byteBuffer.position(offset);
+			buffer.position(offset);
 			glEnableClientState(GL_NORMAL_ARRAY);
-			glNormalPointer(GL_BYTE, vertexSize, byteBuffer);
+			glNormalPointer(GL_BYTE, vertexSize, buffer);
 			offset += 3;
 		}else {
 			glDisableClientState(GL_NORMAL_ARRAY);
 		}
+
+		glClientActiveTexture(GL_TEXTURE1);
+		if(hasLightmap) {
+			buffer.position(offset);
+			glTexCoordPointer(2, GL_SHORT, vertexSize, buffer);
+			glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+			offset += 4;
+		}else {
+			glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+		}
+		glClientActiveTexture(GL_TEXTURE0);
 		
 		for(int i=0; i < vertexAttribs.size(); i++) {
 			VertexAttribute attrib = vertexAttribs.get(i);
 			
-			byteBuffer.position(offset);
+			buffer.position(offset);
 			glEnableVertexAttribArray(attrib.id);
-			glVertexAttribPointer(attrib.id, attrib.getSize(), attrib.type, false, vertexSize, byteBuffer);
+			glVertexAttribPointer(attrib.id, attrib.getSize(), attrib.type, false, vertexSize, buffer);
 			offset += attrib.getTypeSize();
 		}
 		
@@ -104,31 +140,35 @@ public class CustomTessellator extends Tessellator {
 	public void addVertex(double x, double y, double z) {
 		checkIsDrawing();
 		
-		if(byteBuffer.capacity() < byteBuffer.position() + 64) {
+		if(buffer.capacity() < buffer.position() + 64) {
 			expandBuffer();
 		}
 		
-		byteBuffer.putFloat((float) (xOffset + x));
-		byteBuffer.putFloat((float) (yOffset + y));
-		byteBuffer.putFloat((float) (zOffset + z));
+		buffer.putFloat((float) (xOffset + x));
+		buffer.putFloat((float) (yOffset + y));
+		buffer.putFloat((float) (zOffset + z));
 
 		if(hasColor) {
-			byteBuffer.putInt(color);
+			buffer.putInt(color);
 		}
 		
 		if(hasTexture) {
-			byteBuffer.putFloat((float) textureU);
-			byteBuffer.putFloat((float) textureV);
+			buffer.putFloat((float) textureU);
+			buffer.putFloat((float) textureV);
 		}
 		
 		if(hasNormals) {
-			byteBuffer.put((byte) ((this.normal >> 16) & 0xFF));
-			byteBuffer.put((byte) ((this.normal >>  8) & 0xFF));
-			byteBuffer.put((byte) (this.normal & 0xFF));
+			buffer.put((byte) ((this.normal >> 16) & 0xFF));
+			buffer.put((byte) ((this.normal >>  8) & 0xFF));
+			buffer.put((byte) (this.normal & 0xFF));
+		}
+		
+		if(hasLightmap) {
+			buffer.putInt(lightmapCoord);
 		}
 		
 		for(int i=0; i < vertexAttribs.size(); i++) {
-			vertexAttribs.get(i).addVertex(byteBuffer);
+			vertexAttribs.get(i).addVertex(buffer);
 		}
 		
 		addedVertices++;
@@ -154,6 +194,15 @@ public class CustomTessellator extends Tessellator {
 		this.hasTexture = true;
 		this.textureU = u;
 		this.textureV = v;
+	}
+	
+	@Override
+	public void setLightmapCoord(int lmc) {
+		if(addedVertices > 0 && !hasLightmap || !LightmapHelper.isLightmapEnabled()) {
+			throw new RuntimeException("Lightmap is disabled!");
+		}
+		this.hasLightmap = true;
+		this.lightmapCoord = lmc;
 	}
 	
 	@Override
@@ -197,6 +246,7 @@ public class CustomTessellator extends Tessellator {
 		if(hasColor) size += 4;
 		if(hasTexture) size += 8;
 		if(hasNormals) size += 3;
+		if(hasLightmap) size += 4;
 		
 		for(int i=0; i < vertexAttribs.size(); i++) {
 			size += vertexAttribs.get(i).getTypeSize();
@@ -206,13 +256,44 @@ public class CustomTessellator extends Tessellator {
 	}
 	
 	public void expandBuffer() {
-		int newSize = byteBuffer.capacity() * 2;
+		int newSize = buffer.capacity() * 2;
 		NatriumMod.log("Expanding tessellator buffer to " + newSize);
 		
 		ByteBuffer newBuffer = BufferHelper.createByteBuffer(newSize);
 		newBuffer.clear();
-		byteBuffer.flip();
-		newBuffer.put(byteBuffer);
-		this.byteBuffer = newBuffer;
+		buffer.flip();
+		newBuffer.put(buffer);
+		this.buffer = newBuffer;
+	}
+	
+	@Override
+	public void disableColor() {
+		this.isColorDisabled = true;
+	}
+
+	@Override
+	public void offsetTranslation(float x, float y, float z) {
+		this.xOffset += (double) x;
+		this.yOffset += (double) y;
+		this.zOffset += (double) z;
+	}
+
+	@Override
+	public void setTranslation(double x, double y, double z) {
+		this.xOffset = x;
+		this.yOffset = y;
+		this.zOffset = z;
+	}
+
+	@Override
+	public void checkIsDrawing() {
+		if (!this.isDrawing) {
+			throw new IllegalStateException("Not tesselating!");
+		}
+	}
+
+	@Override
+	public void setUseVBO(boolean b) {
+		// yes
 	}
 }

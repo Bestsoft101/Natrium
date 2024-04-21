@@ -1,6 +1,7 @@
 package b100.natrium;
 
 import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL13.*;
 import static org.lwjgl.opengl.GL14.*;
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL20.*;
@@ -133,6 +134,15 @@ public class MultiDrawRenderList {
 		}else {
 			glDisableClientState(GL_NORMAL_ARRAY);
 		}
+		glClientActiveTexture(GL_TEXTURE1);
+		if(config.enableLightmap) {
+			glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+			glTexCoordPointer(2, GL_SHORT, vertexSize, offset);
+			offset += 4;
+		}else {
+			glDisableClientState(GL_NORMAL_ARRAY);
+		}
+		glClientActiveTexture(GL_TEXTURE0);
 		
 		for(int i=0; i < config.vertexAttribs.size(); i++) {
 			VertexAttribute attrib = config.vertexAttribs.get(i);

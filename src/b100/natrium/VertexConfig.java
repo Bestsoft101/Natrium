@@ -11,6 +11,7 @@ public class VertexConfig {
 	public boolean enableColor = false;
 	public boolean enableTexcoord = false;
 	public boolean enableNormal = false;
+	public boolean enableLightmap = false;
 	public final List<VertexAttribute> vertexAttribs = new ArrayList<>();
 	
 	public int getVertexSize() {
@@ -19,6 +20,7 @@ public class VertexConfig {
 		if(enableColor) size += 4;
 		if(enableTexcoord) size += 8;
 		if(enableNormal) size += 3;
+		if(enableLightmap) size += 4;
 		for(int i=0; i < vertexAttribs.size(); i++) {
 			size += vertexAttribs.get(i).getTypeSize();
 		}
@@ -32,6 +34,7 @@ public class VertexConfig {
 		copy.enableColor = enableColor;
 		copy.enableTexcoord = enableTexcoord;
 		copy.enableNormal = enableNormal;
+		copy.enableLightmap = enableLightmap;
 		copy.vertexAttribs.addAll(vertexAttribs);
 		return copy;
 	}
@@ -49,6 +52,7 @@ public class VertexConfig {
 		if(c1.enableColor != c2.enableColor) return 2;
 		if(c1.enableTexcoord != c2.enableTexcoord) return 3;
 		if(c1.enableNormal != c2.enableNormal) return 4;
+		if(c1.enableLightmap != c2.enableLightmap) return 4;
 		
 		if(c1.vertexAttribs.size() != c2.vertexAttribs.size()) {
 			return 5;
@@ -71,6 +75,7 @@ public class VertexConfig {
 		vertexConfig.enableColor = tessellator.hasColor;
 		vertexConfig.enableTexcoord = tessellator.hasTexture;
 		vertexConfig.enableNormal = tessellator.hasNormals;
+		vertexConfig.enableLightmap = tessellator.hasLightmap;
 		vertexConfig.drawMode = tessellator.drawMode;
 		vertexConfig.vertexAttribs.addAll(tessellator.vertexAttribs);
 		return vertexConfig;
@@ -82,6 +87,7 @@ public class VertexConfig {
 		object.set("enableColor", enableColor);
 		object.set("enableTexcoord", enableTexcoord);
 		object.set("enableNormal", enableNormal);
+		object.set("enableLightmap", enableLightmap);
 		if(vertexAttribs.size() > 0) {
 			JsonObject attribsJson = new JsonObject();
 			

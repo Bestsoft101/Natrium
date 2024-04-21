@@ -1,15 +1,32 @@
 package b100.natrium.asm;
 
+import b100.natrium.CustomTessellator;
+import b100.natrium.MultiDrawRenderList;
 import b100.natrium.NatriumMod;
+import b100.natrium.VBOPool;
 import b100.natrium.asm.utils.CallbackInfo;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.render.ChunkRenderer;
 import net.minecraft.client.render.RenderGlobal;
-import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.camera.ICamera;
+import net.minecraft.client.render.tessellator.Tessellator;
 
 public class Listeners {
 	
 	private static Minecraft mc;
+	
+	private static final boolean shadersInstalled;
+	
+	static {
+		boolean flag = true;
+		try {
+			b100.shaders.asm.Listeners.class.getName();
+		}catch (Throwable e) {
+			flag = false;
+		}
+		shadersInstalled = flag;
+		NatriumMod.log("Shaders Installed: " + shadersInstalled);
+	}
 	
 	public static void onStartGame() {
 		mc = Minecraft.getMinecraft(Minecraft.class);
@@ -55,6 +72,51 @@ public class Listeners {
 	
 	public static void onReloadChunks() {
 		NatriumMod.terrainRenderer.onReloadChunks();
+	}
+	
+	public static void resetChunkRenderer(ChunkRenderer chunkRenderer) {
+		if(chunkRenderer.renderListEntries == null) {
+			chunkRenderer.renderListEntries = new VBOPool.Entry[2];
+		}
+		for(int renderPass=0; renderPass < chunkRenderer.renderListEntries.length; renderPass++) {
+			VBOPool.Entry entry = chunkRenderer.renderListEntries[renderPass];
+			if(entry != null) {
+				boolean removed = NatriumMod.terrainRenderer.renderLists[renderPass].remove(entry);
+				if(!removed) {
+					throw new RuntimeException("Not removed!");
+				}
+				chunkRenderer.renderListEntries[renderPass] = null;
+			}
+		}
+	}
+	
+	public static void beforeRenderChunk(ChunkRenderer chunkRenderer) {
+		resetChunkRenderer(chunkRenderer);
+	}
+	
+	public static void startRenderingChunk(ChunkRenderer chunkRenderer, int renderPass) {
+		CustomTessellator tessellator = NatriumMod.customTessellator;
+		
+		tessellator.setTranslation(-NatriumMod.terrainRenderer.renderOffsetX, 0, -NatriumMod.terrainRenderer.renderOffsetZ);
+		tessellator.setColorRGBA(255, 255, 255, 255);
+		if(shadersInstalled) {
+			b100.shaders.asm.Listeners.onChunkRenderStart(tessellator);
+		}
+	}
+	
+	public static void stopRenderingChunk(ChunkRenderer chunkRenderer, int renderPass) {
+		CustomTessellator tessellator = NatriumMod.customTessellator;
+		tessellator.isDrawing = false;
+		
+		MultiDrawRenderList renderList = NatriumMod.terrainRenderer.renderLists[renderPass];
+		if(renderList == null) {
+			throw new NullPointerException("RenderList for RenderPass " + renderPass + " is null!");
+		}
+		
+		VBOPool.Entry entry = renderList.add(NatriumMod.customTessellator, /* chunkRenderer.isInFrustum */ true); // TODO
+		if(entry != null) {
+			chunkRenderer.renderListEntries[renderPass] = entry;	
+		}
 	}
 
 }

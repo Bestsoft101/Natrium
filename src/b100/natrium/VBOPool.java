@@ -32,7 +32,7 @@ public class VBOPool {
 			return insertAt(vertexData, 0);
 		}
 		
-		int bytes = vertexData.byteBuffer.position();
+		int bytes = vertexData.buffer.position();
 		
 		if(entries.size() == 1) {
 			Entry entry = entries.get(0);
@@ -58,7 +58,7 @@ public class VBOPool {
 	
 	private Entry insertAt(CustomTessellator tessellator, int listIndex) {
 		int pos = 0;
-		int bytes = tessellator.byteBuffer.position();
+		int bytes = tessellator.buffer.position();
 		
 		if(listIndex > 0) {
 			Entry prev = entries.get(listIndex - 1);
@@ -84,10 +84,10 @@ public class VBOPool {
 			}
 		}
 		
-		tessellator.byteBuffer.flip();
+		tessellator.buffer.flip();
 		
 		glBindBuffer(GL_ARRAY_BUFFER, vbo);
-		glBufferSubData(GL_ARRAY_BUFFER, pos, tessellator.byteBuffer);
+		glBufferSubData(GL_ARRAY_BUFFER, pos, tessellator.buffer);
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 		
 		entries.add(listIndex, entry);

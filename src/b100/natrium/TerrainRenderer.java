@@ -124,6 +124,8 @@ public class TerrainRenderer {
 		glTranslated(-renderPosX, -renderPosY, -renderPosZ);
 		glTranslated(renderOffsetX, 0.0, renderOffsetZ);
 		
+		mc.worldRenderer.lightmapHelper.enableLightmapRendering();
+		
 		boolean fancyGraphics = mc.gameSettings.fancyGraphics.value != 0;
 		if(fancyGraphics) {
 			glColorMask(false, false, false, false);
@@ -134,6 +136,7 @@ public class TerrainRenderer {
 			renderLists[1].draw();
 		}
 		
+		mc.worldRenderer.lightmapHelper.disableLightmapRendering();
 		
 		glPopMatrix();
 	}
