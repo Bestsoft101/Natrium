@@ -119,6 +119,7 @@ public class Transformers {
 
 			MethodNode updateRenderer = ASMHelper.findMethod(classNode, "updateRenderer", "()V");
 			MethodNode reset = ASMHelper.findMethod(classNode, "reset", "()V");
+			MethodNode updateInFrustum = ASMHelper.findMethod(classNode, "updateInFrustum", null);
 			
 			{
 				InsnList insert = new InsnList();
@@ -198,6 +199,15 @@ public class Transformers {
 
 			MethodNode setupGLTranslation = ASMHelper.findMethod(classNode, "setupGLTranslation", "()V");
 			removeMethodCall(setupGLTranslation.instructions, ASMHelper.findInstruction(setupGLTranslation, false, (n) -> FindInstruction.methodInsn(n, GL11, "glTranslatef", null)));
+			
+			{
+				ASMHelper.findAllInstructions(updateInFrustum.instructions, (n) -> n.getOpcode() == Opcodes.RETURN).forEach((n) -> {
+					InsnList insert = new InsnList();
+					insert.add(new VarInsnNode(Opcodes.ALOAD, 0));
+					insert.add(new MethodInsnNode(Opcodes.INVOKESTATIC, listenerClass, "onUpdateInFrustum", "(Lnet/minecraft/client/render/ChunkRenderer;)V"));
+					updateInFrustum.instructions.insertBefore(n, insert);
+				});
+			}
 		}
 	}
 	
