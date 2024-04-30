@@ -42,10 +42,9 @@ public class MultiDrawRenderList {
 		if(entries.size() == 0) {
 			this.config = VertexConfig.fromTessellator(tessellator);
 		}else {
-			VertexConfig tessellatorConfig = VertexConfig.fromTessellator(tessellator);
-			int compareStatus = VertexConfig.compare(config, tessellatorConfig);
+			int compareStatus = VertexConfig.compare(config, tessellator);
 			if(compareStatus != 0) {
-				throw new RuntimeException("VertexConfig Mismatch!\n" + this.config + "\n" + tessellatorConfig + "\nError: " + compareStatus);
+				throw new RuntimeException("VertexConfig Mismatch!\n" + this.config + "\n" + VertexConfig.fromTessellator(tessellator) + "\nError: " + compareStatus);
 			}
 		}
 		

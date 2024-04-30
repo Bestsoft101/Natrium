@@ -43,6 +43,32 @@ public class VertexConfig {
 		return false;
 	}
 	
+	public static int compare(VertexConfig c1, CustomTessellator c2) {
+		if(c1.drawMode != c2.drawMode) return 1;
+		if(c1.vertexComponents.size() != c2.enabledVertexComponents.size()) return 1;
+		if(c1.vertexAttribs.size() != c2.vertexAttribs.size()) return 2;
+		
+		for(int i=0; i < c1.vertexComponents.size(); i++) {
+			VertexComponent component1 = c1.vertexComponents.get(i);
+			VertexComponent component2 = c2.enabledVertexComponents.get(i);
+			
+			if(!component1.equals(component2)) {
+				return 1000 + i;
+			}
+		}
+		
+		for(int i=0; i < c1.vertexAttribs.size(); i++) {
+			VertexAttribute attrib1 = c1.vertexAttribs.get(i);
+			VertexAttribute attrib2 = c2.vertexAttribs.get(i);
+			int compare = VertexAttribute.compare(attrib1, attrib2); 
+			if(compare != 0) {
+				return 2000 + i;
+			}
+		}
+		
+		return 0;
+	}
+	
 	public static int compare(VertexConfig c1, VertexConfig c2) {
 		if(c1.drawMode != c2.drawMode) return 1;
 		if(c1.vertexComponents.size() != c2.vertexComponents.size()) return 1;
