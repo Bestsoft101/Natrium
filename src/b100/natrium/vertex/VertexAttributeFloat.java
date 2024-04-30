@@ -1,4 +1,4 @@
-package b100.natrium;
+package b100.natrium.vertex;
 
 import static org.lwjgl.opengl.GL11.*;
 

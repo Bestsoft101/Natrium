@@ -3,24 +3,23 @@ package b100.natrium;
 import java.util.ArrayList;
 import java.util.List;
 
+import b100.json.element.JsonArray;
 import b100.json.element.JsonObject;
+import b100.natrium.vertex.VertexAttribute;
+import b100.natrium.vertex.VertexComponent;
 
 public class VertexConfig {
 
 	public int drawMode;
-	public boolean enableColor = false;
-	public boolean enableTexcoord = false;
-	public boolean enableNormal = false;
-	public boolean enableLightmap = false;
+	public final List<VertexComponent> vertexComponents = new ArrayList<>();
 	public final List<VertexAttribute> vertexAttribs = new ArrayList<>();
 	
 	public int getVertexSize() {
-		int size = 12;
+		int size = 0;
 		
-		if(enableColor) size += 4;
-		if(enableTexcoord) size += 8;
-		if(enableNormal) size += 3;
-		if(enableLightmap) size += 4;
+		for(int i=0; i < vertexComponents.size(); i++) {
+			size += vertexComponents.get(i).getSize();
+		}
 		for(int i=0; i < vertexAttribs.size(); i++) {
 			size += vertexAttribs.get(i).getTypeSize();
 		}
@@ -31,10 +30,7 @@ public class VertexConfig {
 	public VertexConfig copy() {
 		VertexConfig copy = new VertexConfig();
 		copy.drawMode = drawMode;
-		copy.enableColor = enableColor;
-		copy.enableTexcoord = enableTexcoord;
-		copy.enableNormal = enableNormal;
-		copy.enableLightmap = enableLightmap;
+		copy.vertexComponents.addAll(vertexComponents);
 		copy.vertexAttribs.addAll(vertexAttribs);
 		return copy;
 	}
@@ -49,13 +45,16 @@ public class VertexConfig {
 	
 	public static int compare(VertexConfig c1, VertexConfig c2) {
 		if(c1.drawMode != c2.drawMode) return 1;
-		if(c1.enableColor != c2.enableColor) return 2;
-		if(c1.enableTexcoord != c2.enableTexcoord) return 3;
-		if(c1.enableNormal != c2.enableNormal) return 4;
-		if(c1.enableLightmap != c2.enableLightmap) return 4;
+		if(c1.vertexComponents.size() != c2.vertexComponents.size()) return 1;
+		if(c1.vertexAttribs.size() != c2.vertexAttribs.size()) return 2;
 		
-		if(c1.vertexAttribs.size() != c2.vertexAttribs.size()) {
-			return 5;
+		for(int i=0; i < c1.vertexComponents.size(); i++) {
+			VertexComponent component1 = c1.vertexComponents.get(i);
+			VertexComponent component2 = c2.vertexComponents.get(i);
+			
+			if(!component1.equals(component2)) {
+				return 1000 + i;
+			}
 		}
 		
 		for(int i=0; i < c1.vertexAttribs.size(); i++) {
@@ -63,7 +62,7 @@ public class VertexConfig {
 			VertexAttribute attrib2 = c2.vertexAttribs.get(i);
 			int compare = VertexAttribute.compare(attrib1, attrib2); 
 			if(compare != 0) {
-				return (6 + i) * 1000 + compare;
+				return 2000 + i;
 			}
 		}
 		
@@ -72,11 +71,8 @@ public class VertexConfig {
 	
 	public static VertexConfig fromTessellator(CustomTessellator tessellator) {
 		VertexConfig vertexConfig = new VertexConfig();
-		vertexConfig.enableColor = tessellator.hasColor;
-		vertexConfig.enableTexcoord = tessellator.hasTexture;
-		vertexConfig.enableNormal = tessellator.hasNormals;
-		vertexConfig.enableLightmap = tessellator.hasLightmap;
 		vertexConfig.drawMode = tessellator.drawMode;
+		vertexConfig.vertexComponents.addAll(tessellator.enabledVertexComponents);
 		vertexConfig.vertexAttribs.addAll(tessellator.vertexAttribs);
 		return vertexConfig;
 	}
@@ -84,25 +80,33 @@ public class VertexConfig {
 	public JsonObject toJson() {
 		JsonObject object = new JsonObject();
 		object.set("drawMode", drawMode);
-		object.set("enableColor", enableColor);
-		object.set("enableTexcoord", enableTexcoord);
-		object.set("enableNormal", enableNormal);
-		object.set("enableLightmap", enableLightmap);
-		if(vertexAttribs.size() > 0) {
-			JsonObject attribsJson = new JsonObject();
+		if(vertexComponents.size() > 0) {
+			JsonArray compsJson = new JsonArray(vertexComponents.size());
 			
-			attribsJson.set("size", vertexAttribs.size());
+			for(int i=0; i < vertexComponents.size(); i++) {
+				VertexComponent component = vertexComponents.get(i);
+				JsonObject compObject = new JsonObject();
+				
+				compObject.set("type", component.getClass().getName());
+				compObject.set("size", component.getSize());
+				
+				compsJson.set(i, compObject);
+			}
+			object.set("components", compsJson);
+		}
+		if(vertexAttribs.size() > 0) {
+			JsonArray attribsJson = new JsonArray(vertexAttribs.size());
 			
 			for(int i=0; i < vertexAttribs.size(); i++) {
 				VertexAttribute attribute = vertexAttribs.get(i);
 				JsonObject attribObject = new JsonObject();
 				
+				attribObject.set("name", attribute.name);
 				attribObject.set("id", attribute.id);
 				attribObject.set("type", attribute.type);
 				
-				attribsJson.set(attribute.name, attribObject);
+				attribsJson.set(i, attribObject);
 			}
-			
 			object.set("attribs", attribsJson);
 		}
 		return object;

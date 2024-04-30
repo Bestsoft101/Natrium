@@ -1,7 +1,5 @@
 package b100.natrium;
 
-import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL13.*;
 import static org.lwjgl.opengl.GL14.*;
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL20.*;
@@ -11,6 +9,9 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import b100.natrium.vertex.VertexAttribute;
+import b100.natrium.vertex.VertexComponent;
 
 public class MultiDrawRenderList {
 	
@@ -109,40 +110,11 @@ public class MultiDrawRenderList {
 		int vertexSize = config.getVertexSize();
 		int offset = 0;
 		
-		glEnableClientState(GL_VERTEX_ARRAY);
-		glVertexPointer(3, GL_FLOAT, vertexSize, offset);
-		offset += 12;
-		
-		if(config.enableColor) {
-			glEnableClientState(GL_COLOR_ARRAY);
-			glColorPointer(4, GL_UNSIGNED_BYTE, vertexSize, offset);
-			offset += 4;
-		}else {
-			glDisableClientState(GL_COLOR_ARRAY);
+		for(int i=0; i < config.vertexComponents.size(); i++) {
+			VertexComponent vertexComponent = config.vertexComponents.get(i);
+			vertexComponent.enable(vertexSize, offset);
+			offset += vertexComponent.getSize();
 		}
-		if(config.enableTexcoord) {
-			glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-			glTexCoordPointer(2, GL_FLOAT, vertexSize, offset);
-			offset += 8;
-		}else {
-			glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-		}
-		if(config.enableNormal) {
-			glEnableClientState(GL_NORMAL_ARRAY);
-			glNormalPointer(GL_BYTE, vertexSize, offset);
-			offset += 3;
-		}else {
-			glDisableClientState(GL_NORMAL_ARRAY);
-		}
-		glClientActiveTexture(GL_TEXTURE1);
-		if(config.enableLightmap) {
-			glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-			glTexCoordPointer(2, GL_SHORT, vertexSize, offset);
-			offset += 4;
-		}else {
-			glDisableClientState(GL_NORMAL_ARRAY);
-		}
-		glClientActiveTexture(GL_TEXTURE0);
 		
 		for(int i=0; i < config.vertexAttribs.size(); i++) {
 			VertexAttribute attrib = config.vertexAttribs.get(i);
@@ -153,7 +125,11 @@ public class MultiDrawRenderList {
 		}
 		
 		glMultiDrawArrays(config.drawMode, posBuffer, sizeBuffer);
-
+		
+		for(int i=0; i < config.vertexComponents.size(); i++) {
+			config.vertexComponents.get(i).disable();
+		}
+		
 		for(int i=0; i < config.vertexAttribs.size(); i++) {
 			VertexAttribute attrib = config.vertexAttribs.get(i);
 			

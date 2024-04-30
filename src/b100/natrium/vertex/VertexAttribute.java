@@ -1,4 +1,4 @@
-package b100.natrium;
+package b100.natrium.vertex;
 
 import java.nio.ByteBuffer;
 

@@ -8,33 +8,44 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
+import b100.natrium.vertex.VertexAttribute;
+import b100.natrium.vertex.VertexComponent;
+import b100.natrium.vertex.VertexComponentColor;
+import b100.natrium.vertex.VertexComponentMultiTexCoordShort;
+import b100.natrium.vertex.VertexComponentNormalByte;
+import b100.natrium.vertex.VertexComponentPositionFloat;
+import b100.natrium.vertex.VertexComponentTexCoordFloat;
 import net.minecraft.client.render.LightmapHelper;
 import net.minecraft.client.render.tessellator.TessellatorBase;
 import net.minecraft.core.util.helper.MathHelper;
 
 public class CustomTessellator extends TessellatorBase {
 	
+	private static boolean checkDuplicateComponents = false;
+	
 	public ByteBuffer buffer;
 
-	public List<VertexAttribute> vertexAttribs = new ArrayList<>();
+	public VertexComponentPositionFloat positionComponent = new VertexComponentPositionFloat();
+	public VertexComponentTexCoordFloat texcoordComponent = new VertexComponentTexCoordFloat();
+	public VertexComponentNormalByte normalComponent = new VertexComponentNormalByte();
+	public VertexComponentColor colorComponent = new VertexComponentColor();
+	public VertexComponentMultiTexCoordShort lightmapComponent = new VertexComponentMultiTexCoordShort(GL_TEXTURE1);
 	
-	public int drawMode;
+	public List<VertexComponent> enabledVertexComponents = new ArrayList<>();
 	
 	public boolean hasColor = false;
 	public boolean hasTexture = false;
 	public boolean hasNormals = false;
 	public boolean hasLightmap = false;
-
-	private int normal;
-	private int color;
-	private int lightmapCoord;
-	private double textureU;
-	private double textureV;
+	
+	public List<VertexAttribute> vertexAttribs = new ArrayList<>();
+	
+	public int drawMode;
 	
 	public boolean isDrawing = false;
 	public int addedVertices = 0;
 	
-	private boolean isColorDisabled = false;
+	private boolean isColorLocked = false;
 	
 	private double xOffset;
 	private double yOffset;
@@ -49,19 +60,23 @@ public class CustomTessellator extends TessellatorBase {
 		if(isDrawing) {
 			throw new RuntimeException("Already drawing!");
 		}
-		
+
 		this.hasColor = false;
 		this.hasTexture = false;
 		this.hasNormals = false;
 		this.hasLightmap = false;
+		
+		enabledVertexComponents.clear();
+		enabledVertexComponents.add(positionComponent);
+		
 		vertexAttribs.clear();
 		
 		this.drawMode = drawMode;
-		addedVertices = 0;
+		this.addedVertices = 0;
 		
 		buffer.clear();
 		
-		this.isColorDisabled = false;
+		this.isColorLocked = false;
 		this.isDrawing = true;
 	}
 	
@@ -79,45 +94,13 @@ public class CustomTessellator extends TessellatorBase {
 		int vertexSize = getVertexSize();
 		int offset = 0;
 		
-		glEnableClientState(GL_VERTEX_ARRAY);
-		glVertexPointer(3, GL_FLOAT, vertexSize, buffer);
-		offset += 12;
-		
-		if(hasColor) {
+		for(int i=0; i < enabledVertexComponents.size(); i++) {
+			VertexComponent vertexComponent = enabledVertexComponents.get(i);
+			
 			buffer.position(offset);
-			glEnableClientState(GL_COLOR_ARRAY);
-			glColorPointer(4, GL_UNSIGNED_BYTE, vertexSize, buffer);
-			offset += 4;
-		}else {
-			glDisableClientState(GL_COLOR_ARRAY);
+			vertexComponent.enable(vertexSize, buffer);
+			offset += vertexComponent.getSize();
 		}
-		if(hasTexture) {
-			buffer.position(offset);
-			glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-			glTexCoordPointer(2, GL_FLOAT, vertexSize, buffer);
-			offset += 8;
-		}else {
-			glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-		}
-		if(hasNormals) {
-			buffer.position(offset);
-			glEnableClientState(GL_NORMAL_ARRAY);
-			glNormalPointer(GL_BYTE, vertexSize, buffer);
-			offset += 3;
-		}else {
-			glDisableClientState(GL_NORMAL_ARRAY);
-		}
-
-		glClientActiveTexture(GL_TEXTURE1);
-		if(hasLightmap) {
-			buffer.position(offset);
-			glTexCoordPointer(2, GL_SHORT, vertexSize, buffer);
-			glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-			offset += 4;
-		}else {
-			glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-		}
-		glClientActiveTexture(GL_TEXTURE0);
 		
 		for(int i=0; i < vertexAttribs.size(); i++) {
 			VertexAttribute attrib = vertexAttribs.get(i);
@@ -130,6 +113,10 @@ public class CustomTessellator extends TessellatorBase {
 		
 		glDrawArrays(drawMode, 0, addedVertices);
 		
+		for(int i=0; i < enabledVertexComponents.size(); i++) {
+			enabledVertexComponents.get(i).disable();
+		}
+		
 		for(int i=0; i < vertexAttribs.size(); i++) {
 			VertexAttribute attrib = vertexAttribs.get(i);
 			glDisableVertexAttribArray(attrib.id);
@@ -140,31 +127,16 @@ public class CustomTessellator extends TessellatorBase {
 	public void addVertex(double x, double y, double z) {
 		checkIsDrawing();
 		
-		if(buffer.capacity() < buffer.position() + 64) {
+		if(buffer.capacity() < buffer.position() + 256) {
 			expandBuffer();
 		}
 		
-		buffer.putFloat((float) (xOffset + x));
-		buffer.putFloat((float) (yOffset + y));
-		buffer.putFloat((float) (zOffset + z));
-
-		if(hasColor) {
-			buffer.putInt(color);
-		}
+		positionComponent.x = (float) (this.xOffset + x);
+		positionComponent.y = (float) (this.yOffset + y);
+		positionComponent.z = (float) (this.zOffset + z);
 		
-		if(hasTexture) {
-			buffer.putFloat((float) textureU);
-			buffer.putFloat((float) textureV);
-		}
-		
-		if(hasNormals) {
-			buffer.put((byte) ((this.normal >> 16) & 0xFF));
-			buffer.put((byte) ((this.normal >>  8) & 0xFF));
-			buffer.put((byte) (this.normal & 0xFF));
-		}
-		
-		if(hasLightmap) {
-			buffer.putInt(lightmapCoord);
+		for(int i=0; i < enabledVertexComponents.size(); i++) {
+			enabledVertexComponents.get(i).addVertex(buffer);
 		}
 		
 		for(int i=0; i < vertexAttribs.size(); i++) {
@@ -176,50 +148,76 @@ public class CustomTessellator extends TessellatorBase {
 	
 	@Override
 	public void setNormal(float x, float y, float z) {
-		if(addedVertices > 0 && !hasNormals) {
-			throw new RuntimeException("Normals are disabled!");
+		if(!this.hasNormals) {
+			if(addedVertices > 0) {
+				throw new RuntimeException("Normals are disabled!");
+			}
+			this.hasNormals = true;
+			this.addVertexComponent(normalComponent);
 		}
-		this.hasNormals = true;
-		byte bx = (byte) ((int) (x * 127.0F));
-		byte by = (byte) ((int) (y * 127.0F));
-		byte bz = (byte) ((int) (z * 127.0F));
-		this.normal = bx << 16 | by << 8 | bz;
+		
+		this.normalComponent.x = (byte) ((int) (x * 127.0F));
+		this.normalComponent.y = (byte) ((int) (y * 127.0F));
+		this.normalComponent.z = (byte) ((int) (z * 127.0F));
 	}
 	
 	@Override
 	public void setTextureUV(double u, double v) {
-		if(addedVertices > 0 && !hasTexture) {
-			throw new RuntimeException("Texcoord is disabled!");
+		if(!hasTexture) {
+			if(addedVertices > 0) {
+				throw new RuntimeException("Texcoord is disabled!");
+			}
+			this.hasTexture = true;
+			this.addVertexComponent(texcoordComponent);
 		}
-		this.hasTexture = true;
-		this.textureU = u;
-		this.textureV = v;
+		
+		this.texcoordComponent.u = (float) u;
+		this.texcoordComponent.v = (float) v;
 	}
 	
 	@Override
 	public void setLightmapCoord(int lmc) {
-		if(addedVertices > 0 && !hasLightmap || !LightmapHelper.isLightmapEnabled()) {
-			throw new RuntimeException("Lightmap is disabled!");
+		if(!hasLightmap) {
+			if(addedVertices > 0 || !LightmapHelper.isLightmapEnabled()) {
+				throw new RuntimeException("Lightmap is disabled!");	
+			}
+			this.hasLightmap = true;
+			this.addVertexComponent(lightmapComponent);
 		}
-		this.hasLightmap = true;
-		this.lightmapCoord = lmc;
+		
+		this.lightmapComponent.texCoord = lmc;
 	}
 	
 	@Override
 	public void setColorRGBA(int r, int g, int b, int a) {
-		if(isColorDisabled) {
+		if(isColorLocked) {
 			return;
 		}
-		if(addedVertices > 0 && !hasColor) {
-//			throw new RuntimeException("Color is disabled!");
-			return;
+		if(!hasColor) {
+			if(addedVertices > 0) {
+//				throw new RuntimeException("Color is disabled!");
+				return;
+			}
+			this.hasColor = true;
+			this.addVertexComponent(colorComponent);
 		}
-		hasColor = true;
 		r = MathHelper.clamp(r, 0, 255);
 		g = MathHelper.clamp(g, 0, 255);
 		b = MathHelper.clamp(b, 0, 255);
 		a = MathHelper.clamp(a, 0, 255);
-		this.color = a << 24 | b << 16 | g << 8 | r;
+		this.colorComponent.color = a << 24 | b << 16 | g << 8 | r;
+	}
+	
+	public void addVertexComponent(VertexComponent vertexComponent) {
+		checkIsDrawing();
+		if(checkDuplicateComponents) {
+			for(int i=0; i < this.enabledVertexComponents.size(); i++) {
+				if(enabledVertexComponents.get(i) == vertexComponent) {
+					throw new RuntimeException("VertexComponent is already added: " + vertexComponent);
+				}
+			}	
+		}
+		this.enabledVertexComponents.add(vertexComponent);
 	}
 	
 	public void addVertexAttrib(VertexAttribute vertexAttribute) {
@@ -241,12 +239,11 @@ public class CustomTessellator extends TessellatorBase {
 	}
 	
 	public int getVertexSize() {
-		int size = 12;
+		int size = 0;
 		
-		if(hasColor) size += 4;
-		if(hasTexture) size += 8;
-		if(hasNormals) size += 3;
-		if(hasLightmap) size += 4;
+		for(int i=0; i < enabledVertexComponents.size(); i++) {
+			size += enabledVertexComponents.get(i).getSize();
+		}
 		
 		for(int i=0; i < vertexAttribs.size(); i++) {
 			size += vertexAttribs.get(i).getTypeSize();
@@ -268,7 +265,7 @@ public class CustomTessellator extends TessellatorBase {
 	
 	@Override
 	public void disableColor() {
-		this.isColorDisabled = true;
+		this.isColorLocked = true;
 	}
 
 	@Override
