@@ -113,9 +113,20 @@ public class Listeners {
 			throw new NullPointerException("RenderList for RenderPass " + renderPass + " is null!");
 		}
 		
-		VBOPool.Entry entry = renderList.add(NatriumMod.customTessellator, /* chunkRenderer.isInFrustum */ true); // TODO
+		VBOPool.Entry entry = renderList.add(NatriumMod.customTessellator, chunkRenderer.isInFrustum);
 		if(entry != null) {
 			chunkRenderer.renderListEntries[renderPass] = entry;	
+		}
+	}
+	
+	public static void onUpdateInFrustum(ChunkRenderer chunkRenderer) {
+		if(chunkRenderer.renderListEntries != null) {
+			for(int i=0; i < chunkRenderer.renderListEntries.length; i++) {
+				VBOPool.Entry entry = chunkRenderer.renderListEntries[i];
+				if(entry != null) {
+					NatriumMod.terrainRenderer.renderLists[i].setVisible(entry, chunkRenderer.isInFrustum);
+				}
+			}	
 		}
 	}
 
