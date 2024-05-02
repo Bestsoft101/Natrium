@@ -17,6 +17,7 @@ import b100.natrium.vertex.VertexComponentPositionFloat;
 import b100.natrium.vertex.VertexComponentTexCoordFloat;
 import net.minecraft.client.render.LightmapHelper;
 import net.minecraft.client.render.tessellator.TessellatorBase;
+import net.minecraft.client.util.debug.Debug;
 import net.minecraft.core.util.helper.MathHelper;
 
 public class CustomTessellator extends TessellatorBase {
@@ -46,6 +47,7 @@ public class CustomTessellator extends TessellatorBase {
 	public int addedVertices = 0;
 	
 	private boolean isColorLocked = false;
+	public boolean autoNormal = false;
 	
 	private double xOffset;
 	private double yOffset;
@@ -77,6 +79,7 @@ public class CustomTessellator extends TessellatorBase {
 		buffer.clear();
 		
 		this.isColorLocked = false;
+		this.autoNormal = false;
 		this.isDrawing = true;
 	}
 	
@@ -87,6 +90,10 @@ public class CustomTessellator extends TessellatorBase {
 		
 		if(addedVertices == 0) {
 			return;
+		}
+		
+		if(autoNormal) {
+			calculateNormals();
 		}
 		
 		buffer.flip();
@@ -148,6 +155,9 @@ public class CustomTessellator extends TessellatorBase {
 	
 	@Override
 	public void setNormal(float x, float y, float z) {
+		if(autoNormal) {
+			return;
+		}
 		if(!this.hasNormals) {
 			if(addedVertices > 0) {
 				throw new RuntimeException("Normals are disabled!");
@@ -252,6 +262,21 @@ public class CustomTessellator extends TessellatorBase {
 		return size;
 	}
 	
+	public int getComponentOffset(VertexComponent vertexComponent) {
+		int offset = 0;
+		
+		for(int i=0; i < enabledVertexComponents.size(); i++) {
+			VertexComponent vertexComponent1 = enabledVertexComponents.get(i);
+			if(vertexComponent == vertexComponent1) {
+				return offset;
+			}else {
+				offset += vertexComponent1.getSize();
+			}
+		}
+		
+		return -1;
+	}
+	
 	public void expandBuffer() {
 		int newSize = buffer.capacity() * 2;
 		NatriumMod.log("Expanding tessellator buffer to " + newSize);
@@ -265,7 +290,85 @@ public class CustomTessellator extends TessellatorBase {
 	
 	@Override
 	public void disableColor() {
+		checkIsDrawing();
 		this.isColorLocked = true;
+	}
+	
+	public void enableAutoNormal() {
+		checkIsDrawing();
+		setNormal(0.0f, 0.0f, 0.0f); // Add component
+		setColorOpaque_I(0xFFFFFF);
+		this.autoNormal = true;
+	}
+	
+	public void calculateNormals() {
+		int vertexSize = getVertexSize();
+		int normalOffset = getComponentOffset(normalComponent);
+		
+		int shapeSize;
+		if(drawMode == GL_TRIANGLES) {
+			shapeSize = 3;
+		}else if(drawMode == GL_QUADS) {
+			shapeSize = 4;
+		}else {
+			throw new RuntimeException("Can't calculate normals for primitive type " + drawMode);
+		}
+			
+		int vertexCount = buffer.position() / vertexSize;
+
+		Debug.push("calcNormals");
+		for(int vertex = 0; vertex < vertexCount; vertex++) {
+			int vertexOffset = vertex * vertexSize;
+			int shapeOffset = (vertex / shapeSize) * shapeSize;
+			
+			int vertexInShape = vertex - shapeOffset;
+			
+			int nextVertex = ((vertexInShape + 1) % shapeSize) + shapeOffset;
+			int prevVertex = ((vertexInShape + shapeSize - 1) % shapeSize) + shapeOffset;
+			
+			int nextVertexOffset = nextVertex * vertexSize;
+			int prevVertexOffset = prevVertex * vertexSize;
+			
+			float x = buffer.getFloat(vertexOffset + 0);
+			float y = buffer.getFloat(vertexOffset + 4);
+			float z = buffer.getFloat(vertexOffset + 8);
+			
+			float nextX = buffer.getFloat(nextVertexOffset + 0) - x;
+			float nextY = buffer.getFloat(nextVertexOffset + 4) - y;
+			float nextZ = buffer.getFloat(nextVertexOffset + 8) - z;
+			
+			float prevX = buffer.getFloat(prevVertexOffset + 0) - x;
+			float prevY = buffer.getFloat(prevVertexOffset + 4) - y;
+			float prevZ = buffer.getFloat(prevVertexOffset + 8) - z;
+
+			float nx = prevZ * nextY - prevY * nextZ;
+			float ny = prevX * nextZ - prevZ * nextX;
+			float nz = prevY * nextX - prevX * nextY;
+			
+			nx = MathHelper.clamp(nx, -1.0f, 1.0f);
+			ny = MathHelper.clamp(ny, -1.0f, 1.0f);
+			nz = MathHelper.clamp(nz, -1.0f, 1.0f);
+			
+			buffer.put(vertexOffset + normalOffset + 0, (byte) ((int) (nx * 127.0f)));
+			buffer.put(vertexOffset + normalOffset + 1, (byte) ((int) (ny * 127.0f)));
+			buffer.put(vertexOffset + normalOffset + 2, (byte) ((int) (nz * 127.0f)));
+			
+//			nx = nx * 0.5f + 0.5f;
+//			ny = ny * 0.5f + 0.5f;
+//			nz = nz * 0.5f + 0.5f;
+//			
+//			int r = (int) (nx * 255);
+//			int g = (int) (ny * 255);
+//			int b = (int) (nz * 255);
+//			
+//			r = MathHelper.clamp(r, 0, 255);
+//			g = MathHelper.clamp(g, 0, 255);
+//			b = MathHelper.clamp(b, 0, 255);
+//			
+//			int color = 0xFF000000 | b << 16 | g << 8 | r;
+//			buffer.putInt(vertexOffset + colorOffset, color);
+		}
+		Debug.pop();
 	}
 
 	@Override

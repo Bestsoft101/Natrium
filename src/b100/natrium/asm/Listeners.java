@@ -108,6 +108,10 @@ public class Listeners {
 		CustomTessellator tessellator = NatriumMod.customTessellator;
 		tessellator.isDrawing = false;
 		
+		if(tessellator.autoNormal) {
+			tessellator.calculateNormals();
+		}
+		
 		MultiDrawRenderList renderList = NatriumMod.terrainRenderer.renderLists[renderPass];
 		if(renderList == null) {
 			throw new NullPointerException("RenderList for RenderPass " + renderPass + " is null!");
