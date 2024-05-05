@@ -5,9 +5,7 @@ import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL20.*;
 
 import java.nio.IntBuffer;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import b100.natrium.vertex.VertexAttribute;
@@ -17,21 +15,15 @@ public class MultiDrawRenderList {
 	
 	public final VBOPool vboPool;
 	
-	List<VBOPool.Entry> entries = new ArrayList<>();
 	Set<VBOPool.Entry> visibleEntries = new HashSet<>();
 	
-	public VertexConfig config;
-
-	private IntBuffer posBuffer;
-	private IntBuffer sizeBuffer;
+	private IntBuffer posBuffer = BufferHelper.createIntBuffer(100000);
+	private IntBuffer sizeBuffer = BufferHelper.createIntBuffer(100000);
 	
 	private boolean visibleEntriesSetUpdated = true;
 	
 	public MultiDrawRenderList(VBOPool vboPool) {
 		this.vboPool = vboPool;
-		
-		posBuffer = BufferHelper.createIntBuffer(100000);
-		sizeBuffer = BufferHelper.createIntBuffer(100000);
 	}
 	
 	public VBOPool.Entry add(CustomTessellator tessellator, boolean visible) {
@@ -39,17 +31,8 @@ public class MultiDrawRenderList {
 			return null;
 		}
 		
-		if(entries.size() == 0) {
-			this.config = VertexConfig.fromTessellator(tessellator);
-		}else {
-			int compareStatus = VertexConfig.compare(config, tessellator);
-			if(compareStatus != 0) {
-				throw new RuntimeException("VertexConfig Mismatch!\n" + this.config + "\n" + VertexConfig.fromTessellator(tessellator) + "\nError: " + compareStatus);
-			}
-		}
 		
 		VBOPool.Entry entry = vboPool.add(tessellator);
-		this.entries.add(entry);
 		
 		if(visible) {
 			this.visibleEntries.add(entry);
@@ -61,10 +44,8 @@ public class MultiDrawRenderList {
 	
 	public boolean remove(VBOPool.Entry entry) {
 		setVisible(entry, false);
-		if(entries.remove(entry)) {
-			return vboPool.remove(entry);
-		}
-		return false;
+		
+		return vboPool.remove(entry);
 	}
 	
 	public void setVisible(VBOPool.Entry entry, boolean visible) {
@@ -85,13 +66,14 @@ public class MultiDrawRenderList {
 	}
 	
 	public void draw() {
-		if(entries.size() == 0) {
+		if(visibleEntries.size() == 0) {
 			return;
 		}
 		
+		VertexConfig config = vboPool.getVertexConfig();
+		int vertexSize = config.getVertexSize();
+		
 		if(visibleEntriesSetUpdated) {
-			int vertexSize = config.getVertexSize();
-			
 			this.posBuffer.clear();
 			this.sizeBuffer.clear();
 			
@@ -105,8 +87,6 @@ public class MultiDrawRenderList {
 		}
 		
 		glBindBuffer(GL_ARRAY_BUFFER, vboPool.getVBO());
-		
-		int vertexSize = config.getVertexSize();
 		int offset = 0;
 		
 		for(int i=0; i < config.vertexComponents.size(); i++) {

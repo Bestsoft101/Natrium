@@ -7,7 +7,9 @@ import java.util.List;
 
 public class VBOPool {
 	
-	public List<Entry> entries = new ArrayList<>();
+	private List<Entry> entries = new ArrayList<>();
+	
+	private VertexConfig config;
 
 	private int vbo;
 	private long capacity;
@@ -23,23 +25,32 @@ public class VBOPool {
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 	}
 	
-	public Entry add(CustomTessellator vertexData) {
-		if(vertexData.addedVertices == 0) {
+	public Entry add(CustomTessellator tessellator) {
+		if(entries.size() == 0) {
+			this.config = VertexConfig.fromTessellator(tessellator);
+		}else {
+			int compareStatus = VertexConfig.compare(config, tessellator);
+			if(compareStatus != 0) {
+				throw new RuntimeException("VertexConfig Mismatch!\n" + this.config + "\n" + VertexConfig.fromTessellator(tessellator) + "\nError: " + compareStatus);
+			}
+		}
+		
+		if(tessellator.addedVertices == 0) {
 			return null;
 		}
 		
 		if(entries.size() == 0) {
-			return insertAt(vertexData, 0);
+			return insertAt(tessellator, 0);
 		}
 		
-		int bytes = vertexData.buffer.position();
+		int bytes = tessellator.buffer.position();
 		
 		if(entries.size() == 1) {
 			Entry entry = entries.get(0);
 			if(entry.pos > bytes) {
-				return insertAt(vertexData, 0);
+				return insertAt(tessellator, 0);
 			}else {
-				return insertAt(vertexData, 1);
+				return insertAt(tessellator, 1);
 			}
 		}
 		
@@ -49,11 +60,11 @@ public class VBOPool {
 			
 			int availableSpace = nextEntry.pos - (entry.pos + entry.size);
 			if(availableSpace > bytes) {
-				return insertAt(vertexData, i + 1);
+				return insertAt(tessellator, i + 1);
 			}
 		}
 		
-		return insertAt(vertexData, entries.size());
+		return insertAt(tessellator, entries.size());
 	}
 	
 	private Entry insertAt(CustomTessellator tessellator, int listIndex) {
@@ -101,6 +112,10 @@ public class VBOPool {
 	
 	public int getVBO() {
 		return vbo;
+	}
+	
+	public VertexConfig getVertexConfig() {
+		return config;
 	}
 	
 	public class Entry {
