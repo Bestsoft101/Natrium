@@ -1,6 +1,6 @@
 {
 	"modid": "natrium",
-	"version": "0.3",
+	"version": "0.4",
 	"transformers": [
 		"b100.natrium.asm.Transformers"
 	]
