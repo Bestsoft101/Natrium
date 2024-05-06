@@ -3,6 +3,7 @@ package b100.natrium.asm;
 import b100.natrium.CustomTessellator;
 import b100.natrium.MultiDrawRenderList;
 import b100.natrium.NatriumMod;
+import b100.natrium.TerrainRenderer;
 import b100.natrium.VBOPool;
 import b100.natrium.asm.utils.CallbackInfo;
 import net.minecraft.client.Minecraft;
@@ -30,6 +31,9 @@ public class Listeners {
 	
 	public static void onStartGame() {
 		mc = Minecraft.getMinecraft(Minecraft.class);
+		
+		NatriumMod.customTessellator = new CustomTessellator();
+		NatriumMod.terrainRenderer = new TerrainRenderer();
 		
 		Tessellator.instance = NatriumMod.customTessellator;
 		
@@ -76,7 +80,7 @@ public class Listeners {
 	
 	public static void resetChunkRenderer(ChunkRenderer chunkRenderer) {
 		if(chunkRenderer.renderListEntries == null) {
-			chunkRenderer.renderListEntries = new VBOPool.Entry[2];
+			chunkRenderer.renderListEntries = new VBOPool.Entry[NatriumMod.renderListCount];
 		}
 		for(int renderPass=0; renderPass < chunkRenderer.renderListEntries.length; renderPass++) {
 			VBOPool.Entry entry = chunkRenderer.renderListEntries[renderPass];
@@ -105,6 +109,8 @@ public class Listeners {
 	}
 	
 	public static void stopRenderingChunk(ChunkRenderer chunkRenderer, int renderPass) {
+		renderPass = renderPass + NatriumMod.renderListRenderOffset;
+		
 		CustomTessellator tessellator = NatriumMod.customTessellator;
 		tessellator.isDrawing = false;
 		
@@ -125,7 +131,8 @@ public class Listeners {
 	
 	public static void onUpdateInFrustum(ChunkRenderer chunkRenderer) {
 		if(chunkRenderer.renderListEntries != null) {
-			for(int i=0; i < chunkRenderer.renderListEntries.length; i++) {
+			int limit = NatriumMod.renderListRenderOffset + NatriumMod.renderListToUpdateCount;
+			for(int i=NatriumMod.renderListRenderOffset; i < limit; i++) {
 				VBOPool.Entry entry = chunkRenderer.renderListEntries[i];
 				if(entry != null) {
 					NatriumMod.terrainRenderer.renderLists[i].setVisible(entry, chunkRenderer.isInFrustum);

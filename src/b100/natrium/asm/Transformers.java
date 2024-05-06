@@ -82,14 +82,9 @@ public class Transformers {
 		public void transform(String className, ClassNode classNode) {
 			ASMHelper.findField(classNode, "renderDistance").access = Opcodes.ACC_PUBLIC;
 			ASMHelper.findMethod(classNode, "markRenderersForNewPosition", null).access = Opcodes.ACC_PUBLIC;
+			ASMHelper.findField(classNode, "chunkRenderers").access = Opcodes.ACC_PUBLIC;
 			
 			MethodNode loadRenderers = ASMHelper.findMethod(classNode, "loadRenderers", null);
-			
-			// Create ChunkRendererMultiDraw instead of ChunkRenderer
-//			MethodInsnNode chunkRendererInitNode = (MethodInsnNode) ASMHelper.findInstruction(loadRenderers, false, (n) -> n.getOpcode() == Opcodes.INVOKESPECIAL && FindInstruction.methodInsn(n, "net/minecraft/client/render/ChunkRenderer", "<init>", null));
-//			TypeInsnNode chunkRendererNewNode = (TypeInsnNode) ASMHelper.findInstruction(chunkRendererInitNode, true, (n) -> n.getOpcode() == Opcodes.NEW);
-//			chunkRendererInitNode.owner = "b100/natrium/ChunkRendererMultiDraw";
-//			chunkRendererNewNode.desc = "b100/natrium/ChunkRendererMultiDraw";
 			
 			loadRenderers.instructions.insertBefore(loadRenderers.instructions.getFirst(), new MethodInsnNode(Opcodes.INVOKESTATIC, listenerClass, "onReloadChunks", "()V"));
 		}
@@ -129,22 +124,6 @@ public class Transformers {
 			}
 			
 			{
-				/*
-				AbstractInsnNode node = ASMHelper.findInstruction(updateRenderer, false, (aaa) -> {
-					System.out.println(ASMHelper.toString(aaa));
-					if(aaa instanceof FieldInsnNode) {
-						FieldInsnNode fieldInsnNode = (FieldInsnNode) aaa;
-						System.out.println("METHOD " + fieldInsnNode.owner + fieldInsnNode.name + fieldInsnNode.desc);
-						if(fieldInsnNode.name.equals("isLit")) {
-							return true;
-						}else {
-							System.out.println(fieldInsnNode.name + " != isLit");
-						}
-					}
-					
-					return false;
-				});
-				*/
 				AbstractInsnNode node = ASMHelper.findInstruction(updateRenderer, false, (n) -> FindInstruction.fieldInsn(n, null, "isLit", null)).getPrevious();
 				InsnList insert = new InsnList();
 				insert.add(new VarInsnNode(Opcodes.ALOAD, 0));

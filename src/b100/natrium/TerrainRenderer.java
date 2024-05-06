@@ -12,7 +12,7 @@ public class TerrainRenderer {
 	
 	public VBOPool vboPool;
 	
-	public MultiDrawRenderList[] renderLists = new MultiDrawRenderList[2]; // 2 Render Passes
+	public MultiDrawRenderList[] renderLists = new MultiDrawRenderList[NatriumMod.renderListCount];
 	
 	public double renderPosX;
 	public double renderPosY;
@@ -33,8 +33,9 @@ public class TerrainRenderer {
 		this.mc = minecraft;
 		
 		vboPool = new VBOPool(1073741824);
-		renderLists[0] = new MultiDrawRenderList(vboPool);
-		renderLists[1] = new MultiDrawRenderList(vboPool);
+		for(int i=0; i < renderLists.length; i++) {
+			renderLists[i] = new MultiDrawRenderList(vboPool);	
+		}
 	}
 	
 	public void renderTerrain(ICamera camera, float partialTicks) {
@@ -90,7 +91,7 @@ public class TerrainRenderer {
 		glTranslated(-renderPosX, -renderPosY, -renderPosZ);
 		glTranslated(renderOffsetX, 0.0, renderOffsetZ);
 		
-		renderLists[0].draw();
+		renderLists[NatriumMod.renderListRenderOffset].draw();
 		
 		glPopMatrix();
 	}
@@ -129,11 +130,11 @@ public class TerrainRenderer {
 		boolean fancyGraphics = mc.gameSettings.fancyGraphics.value != 0;
 		if(fancyGraphics) {
 			glColorMask(false, false, false, false);
-			renderLists[1].draw();
+			renderLists[NatriumMod.renderListRenderOffset + 1].draw();
 			glColorMask(true, true, true, true);
-			renderLists[1].draw();
+			renderLists[NatriumMod.renderListRenderOffset + 1].draw();
 		}else {
-			renderLists[1].draw();
+			renderLists[NatriumMod.renderListRenderOffset + 1].draw();
 		}
 		
 		mc.worldRenderer.lightmapHelper.disableLightmapRendering();
