@@ -289,7 +289,7 @@ public class CustomTessellator extends TessellatorBase {
 	}
 	
 	@Override
-	public void disableColor() {
+	public void lockColor() {
 		checkIsDrawing();
 		this.isColorLocked = true;
 	}
@@ -390,10 +390,5 @@ public class CustomTessellator extends TessellatorBase {
 		if (!this.isDrawing) {
 			throw new IllegalStateException("Not tesselating!");
 		}
-	}
-
-	@Override
-	public void setUseVBO(boolean b) {
-		// yes
 	}
 }
