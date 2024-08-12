@@ -197,6 +197,12 @@ public class NatriumTransformers {
 			}
 			
 			renderWorld.instructions.insertBefore(afterWaterRender, new MethodInsnNode(Opcodes.INVOKESTATIC, "NatriumMod", "onRenderWater", "()V"));
+			
+			// Disable OptiFine's lagometer
+			MethodNode showLagometer = ASMHelper.findMethod(classNode, "showLagometer");
+			InsnList insert = new InsnList();
+			insert.add(new InsnNode(Opcodes.RETURN));
+			ASMHelper.insertAtStart(showLagometer, insert);
 		}
 	}
 	

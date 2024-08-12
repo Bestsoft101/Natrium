@@ -59,9 +59,13 @@ public class NatriumMod {
 	}
 	
 	public static void onRenderGui(atr guiIngame, float f, boolean b, int i, int j) {
-		if(getMinecraft().y.X) {
+		if(isDebugScreenVisible()) {
 			NatriumDebugRender.render();
 		}
+	}
+	
+	public static boolean isDebugScreenVisible() {
+		return getMinecraft().y.X;
 	}
 	
 	@SuppressWarnings("unchecked")
