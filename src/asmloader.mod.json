@@ -1,0 +1,6 @@
+{
+	"modid": "natrium",
+	"transformers": [
+		"NatriumTransformers"
+	]
+}
