@@ -5,6 +5,7 @@ import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.IntInsnNode;
 import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
+import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
 public class FindInstruction {
@@ -137,6 +138,14 @@ public class FindInstruction {
 		if(node instanceof VarInsnNode) {
 			VarInsnNode node1 = (VarInsnNode) node;
 			return node1.var == var;
+		}
+		return false;
+	}
+	
+	public static boolean typeInsn(AbstractInsnNode node, String desc) {
+		if(node instanceof TypeInsnNode) {
+			TypeInsnNode node1 = (TypeInsnNode) node;
+			return node1.desc.equals(desc);
 		}
 		return false;
 	}

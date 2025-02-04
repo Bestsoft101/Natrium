@@ -270,6 +270,10 @@ public abstract class ASMHelper {
 		return findInstruction(backwards ? method.instructions.getLast() : method.instructions.getFirst(), backwards, condition);
 	}
 	
+	public static AbstractInsnNode findInstruction(InsnList instructions, boolean backwards, Condition<AbstractInsnNode> condition) {
+		return findInstruction(backwards ? instructions.getLast() : instructions.getFirst(), backwards, condition);
+	}
+	
 	public static AbstractInsnNode findInstruction(AbstractInsnNode startInstruction, boolean backwards, Condition<AbstractInsnNode> condition) {
 		AbstractInsnNode instruction = startInstruction;
 		while(true) {

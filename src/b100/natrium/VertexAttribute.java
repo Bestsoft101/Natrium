@@ -1,7 +1,10 @@
-package b100.natrium.vertex;
+package b100.natrium;
 
 import java.nio.ByteBuffer;
 
+/**
+ * Can be used by mods
+ */
 public abstract class VertexAttribute {
 	
 	public final String name;
@@ -33,22 +36,5 @@ public abstract class VertexAttribute {
 		return 0;
 	}
 	
-	/*
-	public static int getTypeSize(int type) {
-		if(type == GL_BYTE || type == GL_UNSIGNED_BYTE) {
-			return 1;
-		}else if(type == GL_SHORT || type == GL_UNSIGNED_SHORT) {
-			return 2;
-		}else if(type == GL_INT || type == GL_UNSIGNED_INT) {
-			return 4;
-		}else if(type == GL_FLOAT) {
-			return 4;
-		}else if(type == GL_DOUBLE) {
-			return 8;
-		}else {
-			throw new RuntimeException("Unknown type: " + type);
-		}
-	}
-	*/
 
 }
